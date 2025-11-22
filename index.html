@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智能助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Custom scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #e5e7eb;
+            border-radius: 20px;
+        }
+        .tab-active {
+            border-bottom: 2px solid #2563eb;
+            color: #2563eb;
+        }
+        .tab-inactive {
+            color: #6b7280;
+        }
+        .tab-inactive:hover {
+            color: #374151;
+        }
+        /* Markdown Table Styles */
+        .prose table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            font-size: 0.9em;
+        }
+        .prose th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+        }
+        .prose td {
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+        }
+        .prose tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .prose p {
+            margin-bottom: 0.5em;
+        }
+        .prose ul {
+            list-style-type: disc;
+            padding-left: 1.5em;
+            margin: 0.5em 0;
+        }
+        .prose ol {
+            list-style-type: decimal;
+            padding-left: 1.5em;
+            margin: 0.5em 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen flex font-sans text-gray-800 overflow-hidden">
+
+    <!-- Sidebar -->
+    <div class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 z-20">
+        <div class="p-6 border-b border-gray-100">
+            <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <i data-lucide="cpu" class="w-6 h-6 text-blue-600"></i>
+                AI 智能平台
+            </h1>
+        </div>
+        
+        <div class="p-4 space-y-6">
+            <div>
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">数据导入</h3>
+                <div class="space-y-2">
+                    <button onclick="document.getElementById('batch-kb-upload').click()" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-left group">
+                        <div class="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center text-gray-500 group-hover:text-blue-600 transition-colors">
+                            <i data-lucide="database" class="w-4 h-4"></i>
+                        </div>
+                        <span>导入知识库</span>
+                    </button>
+                    <input type="file" id="batch-kb-upload" class="hidden" multiple onchange="handleBatchUpload(this, 'kb')">
+
+                    <button onclick="document.getElementById('batch-unstructured-upload').click()" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition-colors text-left group">
+                        <div class="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-purple-100 flex items-center justify-center text-gray-500 group-hover:text-purple-600 transition-colors">
+                            <i data-lucide="files" class="w-4 h-4"></i>
+                        </div>
+                        <span>导入非结构化数据</span>
+                    </button>
+                    <input type="file" id="batch-unstructured-upload" class="hidden" multiple onchange="handleBatchUpload(this, 'unstructured')">
+                </div>
+            </div>
+        </div>
+        
+        <div id="upload-status-area" class="mt-auto p-4 border-t border-gray-100 max-h-48 overflow-y-auto text-xs space-y-2"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="flex-1 flex flex-col w-full bg-white shadow-sm h-full relative">
+        
+        <!-- Header / Tabs -->
+        <div class="flex border-b border-gray-200 px-6 pt-4">
+            <button id="tab-smart-query" class="px-6 py-3 font-medium text-sm transition-colors tab-active" onclick="switchTab('smart-query')">
+                智能问数
+            </button>
+            <button id="tab-unstructured" class="px-6 py-3 font-medium text-sm transition-colors tab-inactive" onclick="switchTab('unstructured')">
+                非结构化分析
+            </button>
+        </div>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-hidden relative">
+            
+            <!-- Tab 1: Smart Query -->
+            <div id="view-smart-query" class="h-full flex flex-col">
+                <!-- Chat Messages -->
+                <div id="chat-container-smart" class="flex-1 overflow-y-auto p-6 space-y-6">
+                    <!-- Welcome Message -->
+                    <div class="flex gap-4">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600">
+                            <i data-lucide="bot" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex flex-col gap-1 max-w-[80%]">
+                            <span class="text-xs text-gray-500">AI 助手</span>
+                            <div class="bg-gray-100 p-3 rounded-2xl rounded-tl-none text-sm leading-relaxed">
+                                您好！我是您的智能问数助手。您可以上传数据文件，或者直接提问，我会帮您分析数据。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="p-4 border-t border-gray-100 bg-white">
+                    <div class="relative flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-xl p-2 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
+                        <input type="file" id="file-upload-smart" class="hidden" onchange="handleFileUpload(this, 'smart')">
+                        <button class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" onclick="document.getElementById('file-upload-smart').click()" title="上传文件">
+                            <i data-lucide="paperclip" class="w-5 h-5"></i>
+                        </button>
+                        <textarea id="input-smart" rows="1" class="flex-1 bg-transparent border-none focus:ring-0 resize-none py-2 text-sm max-h-32" placeholder="输入您的问题..." onkeydown="handleEnter(event, 'smart')"></textarea>
+                        <button class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm" onclick="sendMessage('smart')">
+                            <i data-lucide="send-horizontal" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="text-center mt-2">
+                        <p class="text-xs text-gray-400">AI 生成的内容可能不准确，请核对重要信息。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Unstructured Analysis -->
+            <div id="view-unstructured" class="h-full flex flex-col hidden">
+                <!-- Chat Messages -->
+                <div id="chat-container-unstructured" class="flex-1 overflow-y-auto p-6 space-y-6">
+                    <!-- Welcome Message -->
+                    <div class="flex gap-4">
+                        <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 text-purple-600">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex flex-col gap-1 max-w-[80%]">
+                            <span class="text-xs text-gray-500">分析助手</span>
+                            <div class="bg-gray-100 p-3 rounded-2xl rounded-tl-none text-sm leading-relaxed">
+                                欢迎来到非结构化分析模式。请上传文档（PDF, Word, TXT等），我将为您提取关键信息并进行深度分析。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="p-4 border-t border-gray-100 bg-white">
+                    <div class="relative flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-xl p-2 focus-within:ring-2 focus-within:ring-purple-100 focus-within:border-purple-300 transition-all">
+                        <input type="file" id="file-upload-unstructured" class="hidden" onchange="handleFileUpload(this, 'unstructured')">
+                        <button class="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" onclick="document.getElementById('file-upload-unstructured').click()" title="上传文件">
+                            <i data-lucide="paperclip" class="w-5 h-5"></i>
+                        </button>
+                        <textarea id="input-unstructured" rows="1" class="flex-1 bg-transparent border-none focus:ring-0 resize-none py-2 text-sm max-h-32" placeholder="输入分析指令..." onkeydown="handleEnter(event, 'unstructured')"></textarea>
+                        <button class="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm" onclick="sendMessage('unstructured')">
+                            <i data-lucide="send-horizontal" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="text-center mt-2">
+                        <p class="text-xs text-gray-400">AI 生成的内容可能不准确，请核对重要信息。</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initialize icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

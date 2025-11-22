@@ -1,0 +1,5 @@
+Analysis Report for sc.patch
+==============================
+Mode: smart
+Result: Analysis completed successfully.
+Details: This is a generated report file from the backend.
