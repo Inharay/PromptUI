@@ -46,3 +46,14 @@ async def upload_file(file: UploadFile = File(...)):
         return response_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/upload_kb")
+async def upload_kb(file: UploadFile = File(...)):
+    try:
+        file_location = f"{KB_DIR}/{file.filename}"
+        with open(file_location, "wb+") as file_object:
+            shutil.copyfileobj(file.file, file_object)
+        
+        return {"filename": file.filename, "message": "Knowledge base file uploaded successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

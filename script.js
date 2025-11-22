@@ -27,14 +27,11 @@ async function handleBatchUpload(input, type) {
         formData.append('file', file);
 
         if (type === 'kb') {
-            // KB -> Smart
-            endpoint = 'http://localhost:8000/api/smart/upload';
+            // KB -> Smart (No model call)
+            endpoint = 'http://localhost:8000/api/smart/upload_kb';
         } else {
-            // Unstructured
-            endpoint = 'http://localhost:8000/api/unstructured/upload';
-            if (isExtractionMode) {
-                formData.append('is_extraction', 'true');
-            }
+            // Unstructured (No model call)
+            endpoint = 'http://localhost:8000/api/unstructured/upload_data';
         }
 
         try {

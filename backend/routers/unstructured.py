@@ -49,3 +49,14 @@ async def upload_file(file: UploadFile = File(...), is_extraction: bool = Form(F
         return response_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/upload_data")
+async def upload_data(file: UploadFile = File(...)):
+    try:
+        file_location = f"{UNSTRUCTURED_DIR}/{file.filename}"
+        with open(file_location, "wb+") as file_object:
+            shutil.copyfileobj(file.file, file_object)
+        
+        return {"filename": file.filename, "message": "Unstructured data file uploaded successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
