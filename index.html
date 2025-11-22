@@ -63,6 +63,13 @@
             padding-left: 1.5em;
             margin: 0.5em 0;
         }
+        /* Toggle Switch */
+        input:checked ~ .dot {
+            transform: translateX(100%);
+        }
+        input:checked ~ .block {
+            background-color: #9333ea;
+        }
     </style>
 </head>
 <body class="bg-gray-50 h-screen flex font-sans text-gray-800 overflow-hidden">
@@ -72,7 +79,7 @@
         <div class="p-6 border-b border-gray-100">
             <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                 <i data-lucide="cpu" class="w-6 h-6 text-blue-600"></i>
-                AI 智能平台
+                DataAgent
             </h1>
         </div>
         
@@ -174,6 +181,18 @@
 
                 <!-- Input Area -->
                 <div class="p-4 border-t border-gray-100 bg-white">
+                    <!-- Extraction Mode Toggle -->
+                    <div class="flex items-center justify-start mb-2 px-1 ml-1">
+                        <label class="flex items-center cursor-pointer select-none">
+                            <div class="mr-2 text-xs font-medium text-gray-500">非结构化提取</div>
+                            <div class="relative">
+                                <input type="checkbox" id="toggle-extraction" class="sr-only" onchange="toggleExtractionMode(this)">
+                                <div class="block bg-gray-200 w-10 h-6 rounded-full transition-colors"></div>
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out"></div>
+                            </div>
+                        </label>
+                    </div>
+
                     <div class="relative flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-xl p-2 focus-within:ring-2 focus-within:ring-purple-100 focus-within:border-purple-300 transition-all">
                         <input type="file" id="file-upload-unstructured" class="hidden" onchange="handleFileUpload(this, 'unstructured')">
                         <button class="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" onclick="document.getElementById('file-upload-unstructured').click()" title="上传文件">

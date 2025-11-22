@@ -35,3 +35,4 @@ ENV/
 # Project specific
 backend/uploads/
 backend/outputs/
+backend/__pycache__/

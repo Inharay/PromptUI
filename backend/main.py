@@ -1,11 +1,9 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-import shutil
 import os
-from llm_service import LLMService
+from routers import smart, unstructured
 
 app = FastAPI()
 
@@ -19,13 +17,15 @@ app.add_middleware(
 )
 
 # Ensure directories exist
-UPLOAD_DIR = "uploads"
 OUTPUT_DIR = "outputs"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Mount outputs directory to serve generated files
 app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
+
+# Include Routers
+app.include_router(smart.router)
+app.include_router(unstructured.router)
 
 # Serve Frontend
 @app.get("/")
@@ -40,48 +40,6 @@ async def read_script():
     if os.path.exists("../script.js"):
         return FileResponse("../script.js")
     return {"error": "Script not found"}
-
-# Initialize LLM Service
-llm_service = LLMService()
-
-class ChatRequest(BaseModel):
-    message: str
-    mode: str
-
-@app.post("/api/chat")
-async def chat_endpoint(request: ChatRequest):
-    try:
-        response = llm_service.chat(request.message, request.mode)
-        return {"response": response}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/upload")
-async def upload_file(file: UploadFile = File(...), mode: str = Form(...)):
-    try:
-        file_location = f"{UPLOAD_DIR}/{file.filename}"
-        with open(file_location, "wb+") as file_object:
-            shutil.copyfileobj(file.file, file_object)
-        
-        # Trigger analysis
-        result = llm_service.analyze_file(file.filename, mode)
-        
-        response_data = {
-            "filename": file.filename,
-            "message": result["message"],
-        }
-
-        if "generated_file" in result:
-            gen_file = result["generated_file"]
-            response_data["result_file"] = {
-                "name": gen_file["name"],
-                "url": f"http://localhost:8000/outputs/{gen_file['name']}",
-                "size": gen_file["size"]
-            }
-
-        return response_data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

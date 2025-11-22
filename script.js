@@ -21,17 +21,24 @@ async function handleBatchUpload(input, type) {
         statusArea.prepend(statusItem);
         lucide.createIcons({ root: statusItem });
 
-        // Map type to backend mode
-        // kb -> smart (assuming knowledge base is for smart query)
-        // unstructured -> unstructured
-        const uploadMode = type === 'kb' ? 'smart' : 'unstructured';
-        
+        // Determine endpoint and params
+        let endpoint = '';
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('mode', uploadMode);
+
+        if (type === 'kb') {
+            // KB -> Smart
+            endpoint = 'http://localhost:8000/api/smart/upload';
+        } else {
+            // Unstructured
+            endpoint = 'http://localhost:8000/api/unstructured/upload';
+            if (isExtractionMode) {
+                formData.append('is_extraction', 'true');
+            }
+        }
 
         try {
-            const response = await fetch('http://localhost:8000/api/upload', {
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 body: formData,
             });
@@ -60,6 +67,39 @@ async function handleBatchUpload(input, type) {
     }
     
     input.value = ''; // Reset input
+}
+
+// Extraction Mode Logic
+let isExtractionMode = false;
+
+function toggleExtractionMode(checkbox) {
+    isExtractionMode = checkbox.checked;
+    const input = document.getElementById('input-unstructured');
+    const sendBtn = input.parentElement.querySelector('button[onclick^="sendMessage"]');
+
+    // Create or get the message span
+    let msgSpan = document.getElementById('extraction-msg');
+    if (!msgSpan) {
+        msgSpan = document.createElement('span');
+        msgSpan.id = 'extraction-msg';
+        msgSpan.className = 'flex-1 text-gray-400 text-sm py-2 italic select-none';
+        msgSpan.innerText = '非结构化提取模式：请点击左侧回形针上传文件...';
+        msgSpan.style.display = 'none';
+        input.parentElement.insertBefore(msgSpan, input);
+    }
+
+    if (isExtractionMode) {
+        // Hide input and button, show message
+        input.style.display = 'none';
+        if(sendBtn) sendBtn.style.display = 'none';
+        msgSpan.style.display = 'block';
+    } else {
+        // Show input and button, hide message
+        input.style.display = '';
+        if(sendBtn) sendBtn.style.display = '';
+        msgSpan.style.display = 'none';
+        input.focus();
+    }
 }
 
 // Tab Switching Logic
@@ -115,13 +155,17 @@ async function sendMessage(type) {
     // Show Typing Indicator
     showTypingIndicator(containerId);
     
+    // Determine endpoint based on type
+    // type is 'smart' or 'unstructured'
+    const endpoint = type === 'smart' ? 'http://localhost:8000/api/smart/chat' : 'http://localhost:8000/api/unstructured/chat';
+
     try {
-        const response = await fetch('http://localhost:8000/api/chat', {
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message: message, mode: type }),
+            body: JSON.stringify({ message: message }),
         });
 
         if (!response.ok) {
@@ -156,10 +200,19 @@ async function handleFileUpload(input, type) {
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('mode', type);
+        
+        let endpoint = '';
+        if (type === 'smart') {
+            endpoint = 'http://localhost:8000/api/smart/upload';
+        } else {
+            endpoint = 'http://localhost:8000/api/unstructured/upload';
+            if (isExtractionMode) {
+                formData.append('is_extraction', 'true');
+            }
+        }
 
         try {
-            const response = await fetch('http://localhost:8000/api/upload', {
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 body: formData,
             });
