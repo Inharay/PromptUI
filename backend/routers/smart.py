@@ -16,9 +16,9 @@ class ChatRequest(BaseModel):
     message: str
 
 @router.post("/chat")
-async def chat_endpoint(request: ChatRequest):
+def chat_endpoint(request: ChatRequest):
     try:
-        response = await run_in_threadpool(smart_service.chat, request.message)
+        response = smart_service.chat(request.message)
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
