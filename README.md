@@ -26,12 +26,11 @@
     ```bash
     pip install -r backend/requirements.txt
     ```
-3.  启动服务：
+3.  启动服务（请在项目根目录下执行）：
     ```bash
-    cd backend
-    python main.py
+    python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
     ```
-    服务默认将在 `http://localhost:8000` 启动。
+    服务默认将在 `http://0.0.0.0:8000` 启动。
 
 ## 技术栈
 
