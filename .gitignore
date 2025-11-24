@@ -36,3 +36,5 @@ ENV/
 backend/uploads/
 backend/outputs/
 backend/__pycache__/
+outputs/
+uploads/
