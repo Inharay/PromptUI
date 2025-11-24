@@ -28,10 +28,7 @@ async def upload_file(file: UploadFile = File(...), is_extraction: bool = Form(F
         with open(file_location, "wb+") as file_object:
             shutil.copyfileobj(file.file, file_object)
         
-        if is_extraction:
-             result = unstructured_service.extract_data_from_file(file_location)
-        else:
-             result = unstructured_service.analyze_file(file_location)
+        result = unstructured_service.extract_data_from_file(file_location)
         
         response_data = {
             "filename": file.filename,
@@ -42,7 +39,7 @@ async def upload_file(file: UploadFile = File(...), is_extraction: bool = Form(F
             gen_file = result["generated_file"]
             response_data["result_file"] = {
                 "name": gen_file["name"],
-                "url": f"http://localhost:8000/outputs/{gen_file['name']}",
+                "url": f"/outputs/{gen_file['name']}",
                 "size": gen_file["size"]
             }
 

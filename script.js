@@ -28,10 +28,10 @@ async function handleBatchUpload(input, type) {
 
         if (type === 'kb') {
             // KB -> Smart (No model call)
-            endpoint = 'http://localhost:8000/api/smart/upload_kb';
+            endpoint = '/api/smart/upload_kb';
         } else {
             // Unstructured (No model call)
-            endpoint = 'http://localhost:8000/api/unstructured/upload_data';
+            endpoint = '/api/unstructured/upload_data';
         }
 
         try {
@@ -154,7 +154,7 @@ async function sendMessage(type) {
     
     // Determine endpoint based on type
     // type is 'smart' or 'unstructured'
-    const endpoint = type === 'smart' ? 'http://localhost:8000/api/smart/chat' : 'http://localhost:8000/api/unstructured/chat';
+    const endpoint = type === 'smart' ? '/api/smart/chat' : '/api/unstructured/chat';
 
     try {
         const response = await fetch(endpoint, {
@@ -200,9 +200,9 @@ async function handleFileUpload(input, type) {
         
         let endpoint = '';
         if (type === 'smart') {
-            endpoint = 'http://localhost:8000/api/smart/upload';
+            endpoint = '/api/smart/upload';
         } else {
-            endpoint = 'http://localhost:8000/api/unstructured/upload';
+            endpoint = '/api/unstructured/upload';
             if (isExtractionMode) {
                 formData.append('is_extraction', 'true');
             }
@@ -302,7 +302,12 @@ function appendFileMessage(containerId, sender, file) {
     
     bubble.onclick = () => {
         if (file.url) {
-            window.open(file.url, '_blank');
+            const a = document.createElement('a');
+            a.href = file.url;
+            a.download = file.name || 'download';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         } else {
             alert(`模拟下载文件: ${file.name}`);
         }

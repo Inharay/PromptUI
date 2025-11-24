@@ -31,9 +31,9 @@
     cd backend
     python main.py
     ```
-    服务将在 `http://localhost:8000` 启动。
+    服务默认将在 `http://localhost:8000` 启动。
 
 ## 技术栈
 
-- **前端**: HTML5, Vanilla JavaScript, Tailwind CSS (CDN), Lucide Icons (CDN)
+- **前端**: HTML5, Vanilla JavaScript, Tailwind CSS (Local), Lucide Icons (Local)
 - **后端**: Python, FastAPI, Uvicorn

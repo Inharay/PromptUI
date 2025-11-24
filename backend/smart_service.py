@@ -44,7 +44,9 @@ class SmartService:
         prompt = f"请分析以下文件内容（文件名：{filename}）：\n\n{file_content}\n\n请生成一份详细的分析报告。"
         
         try:
-            analysis_result = self.chat(prompt)
+            # analysis_result = self.chat(prompt)
+            analysis_result = "test"
+
         except Exception as e:
             analysis_result = f"分析失败: {str(e)}"
 

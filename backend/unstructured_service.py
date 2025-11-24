@@ -44,7 +44,9 @@ class UnstructuredService:
         prompt = f"请分析以下文件内容（文件名：{filename}）：\n\n{file_content}\n\n请生成一份详细的分析报告。"
         
         try:
-            analysis_result = self.chat(prompt)
+            # analysis_result = self.chat(prompt)
+            analysis_result = "test"
+
         except Exception as e:
             analysis_result = f"分析失败: {str(e)}"
 
@@ -63,7 +65,7 @@ class UnstructuredService:
             f.write(analysis_result)
             
         return {
-            "message": f"文件 {filename} 分析完成，请查看生成的报告。",
+            "message": f"非结构化文件 {filename} 分析完成，请查看生成的报告。",
             "generated_file": {
                 "name": result_filename,
                 "path": result_path,

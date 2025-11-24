@@ -39,7 +39,7 @@ async def upload_file(file: UploadFile = File(...)):
             gen_file = result["generated_file"]
             response_data["result_file"] = {
                 "name": gen_file["name"],
-                "url": f"http://localhost:8000/outputs/{gen_file['name']}",
+                "url": f"/outputs/{gen_file['name']}",
                 "size": gen_file["size"]
             }
 

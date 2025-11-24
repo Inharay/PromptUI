@@ -23,6 +23,12 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # Mount outputs directory to serve generated files
 app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
 
+# Mount static directory for frontend assets
+base_dir = os.path.dirname(os.path.abspath(__file__))
+static_dir = os.path.join(base_dir, "../static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 # Include Routers
 app.include_router(smart.router)
 app.include_router(unstructured.router)
