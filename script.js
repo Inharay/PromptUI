@@ -1,3 +1,28 @@
+// SSE Connection
+const clientId = Date.now().toString();
+const eventSource = new EventSource(`/events/${clientId}`);
+
+eventSource.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    
+    if (data.type === 'smart_upload_result') {
+        const containerId = 'chat-container-smart';
+        removeTypingIndicator(containerId);
+        appendMessage(containerId, 'ai', data.message, data.result_file);
+    } else if (data.type === 'unstructured_upload_result') {
+        const containerId = 'chat-container-unstructured';
+        removeTypingIndicator(containerId);
+        appendMessage(containerId, 'ai', data.message, data.result_file);
+    } else if (data.type === 'error') {
+        console.error("Async processing error:", data.message);
+        alert(data.message);
+    }
+};
+
+eventSource.onopen = function() {
+    console.log("SSE connected");
+}
+
 // Batch Upload Logic
 async function handleBatchUpload(input, type) {
     const files = input.files;
@@ -197,6 +222,7 @@ async function handleFileUpload(input, type) {
 
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('client_id', clientId);
         
         let endpoint = '';
         if (type === 'smart') {
@@ -219,16 +245,12 @@ async function handleFileUpload(input, type) {
             }
 
             const data = await response.json();
-            removeTypingIndicator(containerId);
+            // Don't remove typing indicator here, wait for WS message
+            // removeTypingIndicator(containerId);
             
-            // Show analysis message
-            appendMessage(containerId, 'ai', data.message);
+            // Show immediate status if needed, or just wait
+            // appendMessage(containerId, 'ai', data.message); 
             
-            // Show result file if exists
-            if (data.result_file) {
-                appendFileMessage(containerId, 'ai', data.result_file);
-            }
-
         } catch (error) {
             console.error('Error:', error);
             removeTypingIndicator(containerId);
@@ -238,7 +260,7 @@ async function handleFileUpload(input, type) {
 }
 
 // Helper: Append Text Message
-function appendMessage(containerId, sender, text) {
+function appendMessage(containerId, sender, text, file = null) {
     const container = document.getElementById(containerId);
     const isUser = sender === 'user';
     
@@ -264,6 +286,59 @@ function appendMessage(containerId, sender, text) {
     } else {
         // Parse Markdown for AI response
         bubble.innerHTML = marked.parse(text);
+    }
+
+    // Append File if exists (Inside the same bubble)
+    if (file) {
+        // Divider
+        const divider = document.createElement('hr');
+        divider.className = "my-3 border-gray-300";
+        bubble.appendChild(divider);
+
+        // File Container
+        const fileContainer = document.createElement('div');
+        fileContainer.className = "flex items-center gap-3 cursor-pointer hover:bg-gray-200 p-2 rounded-lg transition-colors group";
+        
+        fileContainer.onclick = () => {
+            if (file.url) {
+                const a = document.createElement('a');
+                a.href = file.url;
+                a.download = file.name || 'download';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                alert(`模拟下载文件: ${file.name}`);
+            }
+        };
+        
+        const iconBox = document.createElement('div');
+        iconBox.className = "w-10 h-10 bg-white rounded-lg flex items-center justify-center text-red-500 shadow-sm";
+        iconBox.innerHTML = '<i data-lucide="file-text" class="w-6 h-6"></i>';
+        
+        const fileInfo = document.createElement('div');
+        fileInfo.className = "flex flex-col flex-1 min-w-0";
+        
+        const fileName = document.createElement('span');
+        fileName.className = "font-medium text-gray-700 truncate group-hover:text-blue-600 transition-colors";
+        fileName.innerText = file.name;
+        
+        const fileSize = document.createElement('span');
+        fileSize.className = "text-xs text-gray-500";
+        fileSize.innerText = formatFileSize(file.size);
+        
+        fileInfo.appendChild(fileName);
+        fileInfo.appendChild(fileSize);
+        
+        const downloadIcon = document.createElement('div');
+        downloadIcon.className = "text-gray-400 group-hover:text-blue-600";
+        downloadIcon.innerHTML = '<i data-lucide="download" class="w-5 h-5"></i>';
+
+        fileContainer.appendChild(iconBox);
+        fileContainer.appendChild(fileInfo);
+        fileContainer.appendChild(downloadIcon);
+        
+        bubble.appendChild(fileContainer);
     }
     
     contentCol.appendChild(name);

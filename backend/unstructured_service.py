@@ -1,5 +1,6 @@
 from openai import OpenAI
 import os
+import time
 
 class UnstructuredService:
     def __init__(self):
@@ -89,7 +90,9 @@ class UnstructuredService:
         
         try:
             # 复用 chat 方法，但 prompt 是提取专用的
-            extraction_result = self.chat(prompt)
+            # extraction_result = self.chat(prompt)
+            extraction_result = "test111"
+
         except Exception as e:
             extraction_result = f"提取失败: {str(e)}"
 

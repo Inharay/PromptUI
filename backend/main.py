@@ -1,9 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 import os
-from routers import smart, unstructured
+from .routers import smart, unstructured
+from .connection_manager import manager
 
 app = FastAPI()
 
@@ -15,6 +16,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# SSE Endpoint
+@app.get("/events/{client_id}")
+async def sse_endpoint(request: Request, client_id: str):
+    return StreamingResponse(manager.event_generator(client_id, request), media_type="text/event-stream")
 
 # Ensure directories exist
 OUTPUT_DIR = "outputs"
@@ -36,15 +42,16 @@ app.include_router(unstructured.router)
 # Serve Frontend
 @app.get("/")
 async def read_root():
-    # Assuming running from backend directory
-    if os.path.exists("../index.html"):
-        return FileResponse("../index.html")
-    return {"error": "Frontend not found"}
+    index_path = os.path.join(base_dir, "../index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"error": f"Frontend not found at {index_path}"}
 
 @app.get("/script.js")
 async def read_script():
-    if os.path.exists("../script.js"):
-        return FileResponse("../script.js")
+    script_path = os.path.join(base_dir, "../script.js")
+    if os.path.exists(script_path):
+        return FileResponse(script_path)
     return {"error": "Script not found"}
 
 if __name__ == "__main__":

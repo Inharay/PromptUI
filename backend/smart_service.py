@@ -1,5 +1,6 @@
 from openai import OpenAI
 import os
+import time
 
 class SmartService:
     def __init__(self):
