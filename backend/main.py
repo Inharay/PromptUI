@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 from .routers import smart, unstructured
 from .connection_manager import manager
+from .config import OUTPUT_DIR
 
 app = FastAPI()
 
@@ -21,10 +22,6 @@ app.add_middleware(
 @app.get("/events/{client_id}")
 async def sse_endpoint(request: Request, client_id: str):
     return StreamingResponse(manager.event_generator(client_id, request), media_type="text/event-stream")
-
-# Ensure directories exist
-OUTPUT_DIR = "outputs"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Mount outputs directory to serve generated files
 app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")

@@ -1,6 +1,7 @@
 from openai import OpenAI
 import os
 import time
+from .config import SMART_OUTPUT_DIR
 
 class SmartService:
     def __init__(self):
@@ -51,11 +52,8 @@ class SmartService:
         except Exception as e:
             analysis_result = f"分析失败: {str(e)}"
 
-        output_dir = "outputs"
-        os.makedirs(output_dir, exist_ok=True)
-        
         result_filename = f"analysis_report_{filename}.txt"
-        result_path = os.path.join(output_dir, result_filename)
+        result_path = os.path.join(SMART_OUTPUT_DIR, result_filename)
         
         with open(result_path, "w", encoding="utf-8") as f:
             f.write(f"Analysis Report for {filename}\n")

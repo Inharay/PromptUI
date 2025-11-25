@@ -5,12 +5,10 @@ import shutil
 import os
 from ..unstructured_service import UnstructuredService
 from ..connection_manager import manager
+from ..config import UNSTRUCTURED_DIR, UNSTRUCTURED_OUTPUT_SUBDIR
 
 router = APIRouter(prefix="/api/unstructured", tags=["unstructured"])
 unstructured_service = UnstructuredService()
-
-UNSTRUCTURED_DIR = "uploads/unstructured_data"
-os.makedirs(UNSTRUCTURED_DIR, exist_ok=True)
 
 class ChatRequest(BaseModel):
     message: str
@@ -40,7 +38,7 @@ async def process_unstructured_file(file_location: str, filename: str, is_extrac
             gen_file = result["generated_file"]
             response_data["result_file"] = {
                 "name": gen_file["name"],
-                "url": f"/outputs/{gen_file['name']}",
+                "url": f"/outputs/{UNSTRUCTURED_OUTPUT_SUBDIR}/{gen_file['name']}",
                 "size": gen_file["size"]
             }
         

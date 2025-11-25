@@ -5,12 +5,10 @@ import shutil
 import os
 from ..smart_service import SmartService
 from ..connection_manager import manager
+from ..config import KB_DIR, SMART_OUTPUT_SUBDIR
 
 router = APIRouter(prefix="/api/smart", tags=["smart"])
 smart_service = SmartService()
-
-KB_DIR = "uploads/knowledge_base"
-os.makedirs(KB_DIR, exist_ok=True)
 
 class ChatRequest(BaseModel):
     message: str
@@ -37,7 +35,7 @@ async def process_smart_file(file_location: str, filename: str, client_id: str):
             gen_file = result["generated_file"]
             response_data["result_file"] = {
                 "name": gen_file["name"],
-                "url": f"/outputs/{gen_file['name']}",
+                "url": f"/outputs/{SMART_OUTPUT_SUBDIR}/{gen_file['name']}",
                 "size": gen_file["size"]
             }
         
