@@ -1,31 +1,51 @@
-// SSE Connection
+// WebSocket Connection
 const clientId = Date.now().toString();
 // Use a fixed conversation ID for simulation
 const conversationId = "fixed-simulation-conversation-id";
 const employeeId = "emp_001"; // Mock employee ID
 
-const eventSource = new EventSource(`/events/${clientId}`);
+let socket;
 
-eventSource.onmessage = function(event) {
-    const data = JSON.parse(event.data);
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/${clientId}`;
     
-    if (data.type === 'smart_upload_result') {
-        const containerId = 'chat-container-smart';
-        removeTypingIndicator(containerId);
-        appendMessage(containerId, 'ai', data.message, data.result_file);
-    } else if (data.type === 'unstructured_upload_result') {
-        const containerId = 'chat-container-unstructured';
-        removeTypingIndicator(containerId);
-        appendMessage(containerId, 'ai', data.message, data.result_file);
-    } else if (data.type === 'error') {
-        console.error("Async processing error:", data.message);
-        alert(data.message);
-    }
-};
+    socket = new WebSocket(wsUrl);
 
-eventSource.onopen = function() {
-    console.log("SSE connected");
+    socket.onopen = function() {
+        console.log("WebSocket connected");
+    };
+
+    socket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'smart_upload_result') {
+            const containerId = 'chat-container-smart';
+            removeTypingIndicator(containerId);
+            appendMessage(containerId, 'ai', data.message, data.result_file);
+        } else if (data.type === 'unstructured_upload_result') {
+            const containerId = 'chat-container-unstructured';
+            removeTypingIndicator(containerId);
+            appendMessage(containerId, 'ai', data.message, data.result_file);
+        } else if (data.type === 'error') {
+            console.error("Async processing error:", data.message);
+            alert(data.message);
+        }
+    };
+
+    socket.onclose = function(event) {
+        console.log("WebSocket disconnected. Reconnecting in 3 seconds...");
+        setTimeout(connectWebSocket, 3000);
+    };
+
+    socket.onerror = function(error) {
+        console.error("WebSocket error:", error);
+        socket.close();
+    };
 }
+
+// Initialize WebSocket
+connectWebSocket();
 
 // KB Management State
 // Removed dynamic KB list logic

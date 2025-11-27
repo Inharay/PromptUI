@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,10 +18,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# SSE Endpoint
-@app.get("/events/{client_id}")
-async def sse_endpoint(request: Request, client_id: str):
-    return StreamingResponse(manager.event_generator(client_id, request), media_type="text/event-stream")
+# WebSocket Endpoint
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: str):
+    await manager.connect(websocket, client_id)
+    try:
+        while True:
+            # Keep the connection alive and listen for any client messages (optional)
+            # For now, we just wait for disconnection
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(client_id)
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+        manager.disconnect(client_id)
 
 # Mount outputs directory to serve generated files
 app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
