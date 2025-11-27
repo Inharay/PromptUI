@@ -167,7 +167,22 @@ async function sendMessage(type) {
             if (done) break;
             const chunk = decoder.decode(value, { stream: true });
             aiResponse += chunk;
-            bubble.innerHTML = marked.parse(aiResponse);
+            
+            // Check for citations delimiter
+            const parts = aiResponse.split('\n\n__CITATIONS__\n\n');
+            const mainContent = parts[0];
+            
+            bubble.innerHTML = marked.parse(mainContent);
+            
+            if (parts.length > 1 && parts[1].trim() !== '') {
+                try {
+                    const citations = JSON.parse(parts[1]);
+                    renderCitations(bubble, citations);
+                } catch (e) {
+                    // Incomplete JSON, wait for more chunks
+                }
+            }
+
             scrollToBottom(document.getElementById(containerId));
         }
 
@@ -176,6 +191,28 @@ async function sendMessage(type) {
         removeTypingIndicator(containerId);
         appendMessage(containerId, 'ai', '抱歉，连接服务器失败，请检查后端服务是否启动。');
     }
+}
+
+function renderCitations(bubble, citations) {
+    let citationsContainer = bubble.querySelector('.citations-container');
+    if (!citationsContainer) {
+        citationsContainer = document.createElement('div');
+        citationsContainer.className = 'citations-container mt-4 pt-3 border-t border-gray-200';
+        bubble.appendChild(citationsContainer);
+    }
+    
+    citationsContainer.innerHTML = `
+        <div class="text-xs font-semibold text-gray-500 mb-2">引用文档：</div>
+        <div class="flex flex-wrap gap-2">
+            ${citations.map(c => `
+                <a href="${c.url}" class="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition-colors" target="_blank">
+                    <i data-lucide="file-text" class="w-3 h-3"></i>
+                    <span>${c.title}</span>
+                </a>
+            `).join('')}
+        </div>
+    `;
+    lucide.createIcons({ root: citationsContainer });
 }
 
 // File Upload Logic

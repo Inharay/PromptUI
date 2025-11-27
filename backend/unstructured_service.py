@@ -3,6 +3,7 @@ import os
 import time
 import zipfile
 import threading
+import json
 from .config import UNSTRUCTURED_OUTPUT_DIR
 
 class UnstructuredService:
@@ -64,6 +65,14 @@ class UnstructuredService:
             # Add assistant response to history
             self.history[conversation_id].append({"role": "assistant", "content": full_response})
             
+            # Simulate Citations
+            citations = [
+                {"title": "产品技术规格书_v2.pdf", "url": "#", "source": "非结构化知识库"},
+                {"title": "用户操作手册.docx", "url": "#", "source": "非结构化知识库"}
+            ]
+            yield "\n\n__CITATIONS__\n\n"
+            yield json.dumps(citations)
+
         except Exception as e:
             print(f"Error calling LLM: {e}")
             yield f"调用大模型失败: {str(e)}。"

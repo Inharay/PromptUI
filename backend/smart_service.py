@@ -1,6 +1,7 @@
 from openai import OpenAI
 import os
 import time
+import json
 from .config import SMART_OUTPUT_DIR
 
 class SmartService:
@@ -47,6 +48,14 @@ class SmartService:
             # Add assistant response to history
             self.history[conversation_id].append({"role": "assistant", "content": full_response})
             
+            # Simulate Citations
+            citations = [
+                {"title": "2023年财务报表.xlsx", "url": "#", "source": "结构化知识库"},
+                {"title": "Q4销售数据汇总.csv", "url": "#", "source": "结构化知识库"}
+            ]
+            yield "\n\n__CITATIONS__\n\n"
+            yield json.dumps(citations)
+
         except Exception as e:
             print(f"Error calling LLM: {e}")
             yield f"调用大模型失败: {str(e)}。"
