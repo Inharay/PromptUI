@@ -6,6 +6,11 @@
 - [x] Scaffold the Project
 
 - [x] Customize the Project
+  - Implemented Knowledge Base Management (Folders) for Structured and Unstructured data.
+  - Updated Backend API to support KB CRUD and file management.
+  - Updated Frontend UI to display KB lists and manage files within KBs.
+  - Created a dedicated Knowledge Base Management page (`kb_manager.html`) with pagination.
+  - Implemented Multi-turn Chat with History support (Backend & Frontend).
 
 - [x] Install Required Extensions
 

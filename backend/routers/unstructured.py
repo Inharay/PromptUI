@@ -1,5 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, Body
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 import shutil
 import os
@@ -11,13 +12,30 @@ router = APIRouter(prefix="/api/unstructured", tags=["unstructured"])
 unstructured_service = UnstructuredService()
 
 class ChatRequest(BaseModel):
-    message: str
+    prompt: str
+    conversation_id: str
+    employee_id: str
 
 @router.post("/chat")
-def chat_endpoint(request: ChatRequest):
+async def chat(request: ChatRequest):
     try:
-        response = unstructured_service.chat(request.message)
-        return {"response": response}
+        return StreamingResponse(unstructured_service.chat_stream(request.prompt, request.conversation_id, request.employee_id), media_type="text/plain")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/history/{conversation_id}")
+async def clear_history(conversation_id: str):
+    try:
+        unstructured_service.clear_history(conversation_id)
+        return {"message": "History cleared"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/history/{conversation_id}")
+async def get_history(conversation_id: str):
+    try:
+        history = unstructured_service.get_history(conversation_id)
+        return {"history": history}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -63,13 +81,54 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/upload_data")
-async def upload_data(file: UploadFile = File(...)):
-    try:
-        file_location = f"{UNSTRUCTURED_DIR}/{file.filename}"
-        with open(file_location, "wb+") as file_object:
-            shutil.copyfileobj(file.file, file_object)
+# --- KB Management Endpoints ---
+
+@router.get("/kb/files")
+def get_kb_files(page: int = 1, page_size: int = 10):
+    kb_path = UNSTRUCTURED_DIR
+    files = []
+    total_files = 0
+    if os.path.exists(kb_path):
+        all_files = [f for f in os.listdir(kb_path) if os.path.isfile(os.path.join(kb_path, f))]
+        # Sort files by modification time (newest first)
+        all_files.sort(key=lambda x: os.path.getmtime(os.path.join(kb_path, x)), reverse=True)
         
-        return {"filename": file.filename, "message": "Unstructured data file uploaded successfully."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        total_files = len(all_files)
+        start = (page - 1) * page_size
+        end = start + page_size
+        files = all_files[start:end]
+        
+    return {
+        "files": files,
+        "total": total_files,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": (total_files + page_size - 1) // page_size if page_size > 0 else 0
+    }
+
+@router.post("/kb/upload")
+async def upload_kb_file(file: UploadFile = File(...)):
+    kb_path = UNSTRUCTURED_DIR
+    if not os.path.exists(kb_path):
+        os.makedirs(kb_path)
+    
+    file_location = os.path.join(kb_path, file.filename)
+    with open(file_location, "wb+") as file_object:
+        shutil.copyfileobj(file.file, file_object)
+    
+    return {"filename": file.filename, "message": "File uploaded successfully"}
+
+@router.delete("/kb/files/{filename}")
+def delete_kb_file(filename: str):
+    file_path = os.path.join(UNSTRUCTURED_DIR, filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return {"message": "File deleted"}
+    raise HTTPException(status_code=404, detail="File not found")
+
+@router.get("/kb/files/{filename}")
+def download_kb_file(filename: str):
+    file_path = os.path.join(UNSTRUCTURED_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(file_path, filename=filename)
+    raise HTTPException(status_code=404, detail="File not found")

@@ -11,25 +11,92 @@ class SmartService:
             api_key="sk-c13d96e9c2b0486bb3a2c2ed6016e9b5"
         )
         self.model = "qwen3-max" 
+        self.history = {} # In-memory storage for chat history: {conversation_id: [messages]}
 
-    def chat(self, message: str) -> str:
+    def chat_stream(self, prompt: str, conversation_id: str, employee_id: str):
         """
-        智能问数对话
+        Smart Analysis Chat with History (Streaming)
         """
         system_prompt = "你是一个数据分析专家。请根据用户的问题，模拟查询数据库并给出专业的数据分析回答。"
+        
+        # Initialize history for this conversation if not exists
+        if conversation_id not in self.history:
+            self.history[conversation_id] = []
+
+        # Add user message to history
+        self.history[conversation_id].append({"role": "user", "content": prompt})
+
+        # Construct messages for the API call
+        messages = [{"role": "system", "content": system_prompt}] + self.history[conversation_id]
+
+        try:
+            stream = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=0.7,
+                stream=True
+            )
+            
+            full_response = ""
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    yield content
+            
+            # Add assistant response to history
+            self.history[conversation_id].append({"role": "assistant", "content": full_response})
+            
+        except Exception as e:
+            print(f"Error calling LLM: {e}")
+            yield f"调用大模型失败: {str(e)}。"
+
+    def chat(self, prompt: str, conversation_id: str, employee_id: str) -> str:
+        """
+        Smart Analysis Chat with History
+        """
+        system_prompt = "你是一个数据分析专家。请根据用户的问题，模拟查询数据库并给出专业的数据分析回答。"
+        
+        # Initialize history for this conversation if not exists
+        if conversation_id not in self.history:
+            self.history[conversation_id] = []
+
+        # Add user message to history
+        self.history[conversation_id].append({"role": "user", "content": prompt})
+
+        # Construct messages for the API call
+        messages = [{"role": "system", "content": system_prompt}] + self.history[conversation_id]
+
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": message}
-                ],
+                messages=messages,
                 temperature=0.7,
             )
-            return response.choices[0].message.content
+            response_content = response.choices[0].message.content
+            
+            # Add assistant response to history
+            self.history[conversation_id].append({"role": "assistant", "content": response_content})
+            
+            return response_content
         except Exception as e:
             print(f"Error calling LLM: {e}")
             return f"调用大模型失败: {str(e)}。"
+
+    def clear_history(self, conversation_id: str):
+        """
+        Clear chat history for a specific conversation
+        """
+        if conversation_id in self.history:
+            del self.history[conversation_id]
+            return True
+        return False
+
+    def get_history(self, conversation_id: str) -> list:
+        """
+        Get chat history for a specific conversation
+        """
+        return self.history.get(conversation_id, [])
 
     def analyze_file(self, file_path: str) -> dict:
         """

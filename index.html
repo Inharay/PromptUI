@@ -80,33 +80,45 @@
             <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                 <i data-lucide="cpu" class="w-6 h-6 text-blue-600"></i>
                 DataAgent
+                <span class="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">v1.1</span>
             </h1>
         </div>
         
-        <div class="p-4 space-y-6">
+        <div class="flex-1 overflow-y-auto p-4 space-y-6">
+            <!-- Structured Knowledge Section -->
             <div>
-                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">数据导入</h3>
-                <div class="space-y-2">
-                    <button onclick="document.getElementById('batch-kb-upload').click()" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-left group">
-                        <div class="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center text-gray-500 group-hover:text-blue-600 transition-colors">
+                <div class="flex items-center justify-between mb-3 px-2 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors" onclick="openKB('kb')">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
                             <i data-lucide="database" class="w-4 h-4"></i>
                         </div>
-                        <span>导入知识库</span>
-                    </button>
-                    <input type="file" id="batch-kb-upload" class="hidden" multiple onchange="handleBatchUpload(this, 'kb')">
-
-                    <button onclick="document.getElementById('batch-unstructured-upload').click()" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition-colors text-left group">
-                        <div class="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-purple-100 flex items-center justify-center text-gray-500 group-hover:text-purple-600 transition-colors">
-                            <i data-lucide="files" class="w-4 h-4"></i>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-700">结构化知识库</h3>
+                            <p class="text-xs text-gray-400">数据库表格管理</p>
                         </div>
-                        <span>导入非结构化数据</span>
-                    </button>
-                    <input type="file" id="batch-unstructured-upload" class="hidden" multiple onchange="handleBatchUpload(this, 'unstructured')">
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                </div>
+            </div>
+
+            <!-- Unstructured Knowledge Section -->
+            <div id="sidebar-unstructured-section">
+                <div class="flex items-center justify-between mb-3 px-2 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors" onclick="openKB('unstructured')">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-700">非结构化知识库</h3>
+                            <p class="text-xs text-gray-400">文档资料管理</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
                 </div>
             </div>
         </div>
         
-        <div id="upload-status-area" class="mt-auto p-4 border-t border-gray-100 max-h-48 overflow-y-auto text-xs space-y-2"></div>
+        <div id="upload-status-area" class="p-4 border-t border-gray-100 max-h-32 overflow-y-auto text-xs space-y-2 bg-gray-50"></div>
     </div>
 
     <!-- Main Container -->
@@ -117,7 +129,7 @@
             <button id="tab-smart-query" class="px-6 py-3 font-medium text-sm transition-colors tab-active" onclick="switchTab('smart-query')">
                 智能问数
             </button>
-            <button id="tab-unstructured" class="px-6 py-3 font-medium text-sm transition-colors tab-inactive" onclick="switchTab('unstructured')">
+            <button id="tab-unstructured" class="px-6 py-3 font-medium text-sm transition-colors tab-inactive hidden" onclick="switchTab('unstructured')">
                 非结构化分析
             </button>
         </div>
@@ -149,6 +161,9 @@
                         <input type="file" id="file-upload-smart" class="hidden" onchange="handleFileUpload(this, 'smart')">
                         <button class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" onclick="document.getElementById('file-upload-smart').click()" title="上传文件">
                             <i data-lucide="paperclip" class="w-5 h-5"></i>
+                        </button>
+                        <button class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" onclick="clearHistory('smart')" title="清空历史">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
                         </button>
                         <textarea id="input-smart" rows="1" class="flex-1 bg-transparent border-none focus:ring-0 resize-none py-2 text-sm max-h-32" placeholder="输入您的问题..." onkeydown="handleEnter(event, 'smart')"></textarea>
                         <button class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm" onclick="sendMessage('smart')">
@@ -198,6 +213,9 @@
                         <button class="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" onclick="document.getElementById('file-upload-unstructured').click()" title="上传文件">
                             <i data-lucide="paperclip" class="w-5 h-5"></i>
                         </button>
+                        <button class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" onclick="clearHistory('unstructured')" title="清空历史">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
                         <textarea id="input-unstructured" rows="1" class="flex-1 bg-transparent border-none focus:ring-0 resize-none py-2 text-sm max-h-32" placeholder="输入分析指令..." onkeydown="handleEnter(event, 'unstructured')"></textarea>
                         <button class="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm" onclick="sendMessage('unstructured')">
                             <i data-lucide="send-horizontal" class="w-5 h-5"></i>
@@ -212,7 +230,7 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=1.1"></script>
     <script>
         // Initialize icons
         lucide.createIcons();

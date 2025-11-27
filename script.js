@@ -1,5 +1,9 @@
 // SSE Connection
 const clientId = Date.now().toString();
+// Use a fixed conversation ID for simulation
+const conversationId = "fixed-simulation-conversation-id";
+const employeeId = "emp_001"; // Mock employee ID
+
 const eventSource = new EventSource(`/events/${clientId}`);
 
 eventSource.onmessage = function(event) {
@@ -23,73 +27,26 @@ eventSource.onopen = function() {
     console.log("SSE connected");
 }
 
-// Batch Upload Logic
-async function handleBatchUpload(input, type) {
-    const files = input.files;
-    if (!files || files.length === 0) return;
+// KB Management State
+// Removed dynamic KB list logic
+/*
+let currentKB = {
+    name: null,
+    type: null // 'kb' (structured) or 'unstructured'
+};
 
-    const statusArea = document.getElementById('upload-status-area');
-    
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // Create status item
-        const statusItem = document.createElement('div');
-        statusItem.className = "flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-100";
-        statusItem.innerHTML = `
-            <div class="flex items-center gap-2 overflow-hidden">
-                <i data-lucide="loader-2" class="w-3 h-3 animate-spin text-blue-500"></i>
-                <span class="truncate max-w-[120px]">${file.name}</span>
-            </div>
-            <span class="text-gray-400 text-[10px]">上传中...</span>
-        `;
-        statusArea.prepend(statusItem);
-        lucide.createIcons({ root: statusItem });
-
-        // Determine endpoint and params
-        let endpoint = '';
-        const formData = new FormData();
-        formData.append('file', file);
-
-        if (type === 'kb') {
-            // KB -> Smart (No model call)
-            endpoint = '/api/smart/upload_kb';
-        } else {
-            // Unstructured (No model call)
-            endpoint = '/api/unstructured/upload_data';
-        }
-
-        try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (response.ok) {
-                statusItem.innerHTML = `
-                    <div class="flex items-center gap-2 overflow-hidden">
-                        <i data-lucide="check-circle-2" class="w-3 h-3 text-green-500"></i>
-                        <span class="truncate max-w-[120px]">${file.name}</span>
-                    </div>
-                    <span class="text-green-600 text-[10px]">完成</span>
-                `;
-            } else {
-                throw new Error('Upload failed');
-            }
-        } catch (e) {
-            statusItem.innerHTML = `
-                <div class="flex items-center gap-2 overflow-hidden">
-                    <i data-lucide="x-circle" class="w-3 h-3 text-red-500"></i>
-                    <span class="truncate max-w-[120px]">${file.name}</span>
-                </div>
-                <span class="text-red-600 text-[10px]">失败</span>
-            `;
-        }
-        lucide.createIcons({ root: statusItem });
-    }
-    
-    input.value = ''; // Reset input
+async function loadKBList(type) {
+    // ...
 }
+
+async function createKB(type) {
+    // ...
+}
+
+async function deleteKB(name, type) {
+    // ...
+}
+*/
 
 // Extraction Mode Logic
 let isExtractionMode = false;
@@ -187,16 +144,32 @@ async function sendMessage(type) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message: message }),
+            body: JSON.stringify({ 
+                prompt: message,
+                conversation_id: conversationId,
+                employee_id: employeeId
+            }),
         });
 
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
 
-        const data = await response.json();
         removeTypingIndicator(containerId);
-        appendMessage(containerId, 'ai', data.response);
+        const bubble = appendMessage(containerId, 'ai', '');
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let aiResponse = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            aiResponse += chunk;
+            bubble.innerHTML = marked.parse(aiResponse);
+            scrollToBottom(document.getElementById(containerId));
+        }
 
     } catch (error) {
         console.error('Error:', error);
@@ -258,6 +231,29 @@ async function handleFileUpload(input, type) {
         }
     }
 }
+
+// KB Modal Management
+function openKB(type) {
+    window.location.href = `/kb_manager.html?type=${type}`;
+}
+
+// Removed Modal Logic
+/*
+function closeKBManager() {
+    document.getElementById('kb-manager-modal').classList.add('hidden');
+    currentKB = { name: null, type: null };
+}
+*/
+
+// Initial Load
+document.addEventListener('DOMContentLoaded', () => {
+    initFeatureToggles();
+    loadHistory('smart');
+    if (ENABLE_UNSTRUCTURED_ANALYSIS) {
+        loadHistory('unstructured');
+    }
+    // loadKBList('kb'); // Removed
+});
 
 // Helper: Append Text Message
 function appendMessage(containerId, sender, text, file = null) {
@@ -350,6 +346,8 @@ function appendMessage(containerId, sender, text, file = null) {
     container.appendChild(wrapper);
     lucide.createIcons({ root: wrapper });
     scrollToBottom(container);
+
+    return bubble;
 }
 
 // Helper: Append File Message
@@ -466,4 +464,86 @@ function formatFileSize(bytes) {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// Static Feature Toggle
+const ENABLE_UNSTRUCTURED_ANALYSIS = false; // Set to true to enable Unstructured Analysis Tab
+
+// Feature Toggle Logic
+function initFeatureToggles() {
+    const tabBtn = document.getElementById('tab-unstructured');
+    const sidebarSection = document.getElementById('sidebar-unstructured-section');
+    
+    // Always show Unstructured Knowledge Management
+    if (sidebarSection) sidebarSection.classList.remove('hidden');
+    // loadKBList('unstructured'); // Removed
+
+    if (ENABLE_UNSTRUCTURED_ANALYSIS) {
+        // Show Tab
+        if (tabBtn) tabBtn.classList.remove('hidden');
+    } else {
+        // Hide Tab
+        if (tabBtn) tabBtn.classList.add('hidden');
+    }
+}
+
+// Clear History Logic
+async function clearHistory(type) {
+    if (!confirm('确定要清空当前对话历史吗？')) return;
+
+    const containerId = `chat-container-${type}`;
+    const container = document.getElementById(containerId);
+    
+    // Clear UI (keep the welcome message if possible, or just clear all)
+    // Let's keep the first child (welcome message) if it exists
+    const welcomeMsg = container.firstElementChild;
+    container.innerHTML = '';
+    if (welcomeMsg) {
+        container.appendChild(welcomeMsg);
+    }
+
+    // Call Backend API
+    const endpoint = type === 'smart' ? `/api/smart/history/${conversationId}` : `/api/unstructured/history/${conversationId}`;
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        
+        // Optional: Add a system message saying history cleared
+        // appendMessage(containerId, 'ai', '对话历史已清空。');
+
+    } catch (error) {
+        console.error('Error clearing history:', error);
+        alert('清空历史失败，请检查网络连接。');
+    }
+}
+
+// Load History Logic
+async function loadHistory(type) {
+    const containerId = `chat-container-${type}`;
+    const endpoint = type === 'smart' ? `/api/smart/history/${conversationId}` : `/api/unstructured/history/${conversationId}`;
+
+    try {
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error('Failed to load history');
+        
+        const data = await response.json();
+        const history = data.history || [];
+        
+        history.forEach(msg => {
+            // Skip system messages
+            if (msg.role === 'system') return;
+            
+            const sender = msg.role === 'user' ? 'user' : 'ai';
+            appendMessage(containerId, sender, msg.content);
+        });
+        
+    } catch (error) {
+        console.error('Error loading history:', error);
+    }
 }

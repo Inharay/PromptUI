@@ -51,6 +51,20 @@ async def read_script():
         return FileResponse(script_path)
     return {"error": "Script not found"}
 
+@app.get("/kb_manager.html")
+async def read_kb_manager():
+    page_path = os.path.join(base_dir, "../kb_manager.html")
+    if os.path.exists(page_path):
+        return FileResponse(page_path)
+    return {"error": "Page not found"}
+
+@app.get("/kb_manager.js")
+async def read_kb_manager_js():
+    script_path = os.path.join(base_dir, "../kb_manager.js")
+    if os.path.exists(script_path):
+        return FileResponse(script_path)
+    return {"error": "Script not found"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
