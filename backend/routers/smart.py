@@ -133,7 +133,7 @@ def download_kb_file(filename: str):
     raise HTTPException(status_code=404, detail="File not found")
 
 @router.get("/kb/data/{filename}")
-def get_kb_file_data(filename: str, limit: int = 50):
+def get_kb_file_data(filename: str, limit: int = 0):
     file_path = os.path.join(KB_DIR, filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -143,12 +143,8 @@ def get_kb_file_data(filename: str, limit: int = 50):
 
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            # Use Sniffer to detect dialect
-            sample = f.read(1024)
-            f.seek(0)
-            dialect = csv.Sniffer().sniff(sample)
-            
-            reader = csv.reader(f, dialect)
+            # Use standard CSV reader which handles quotes correctly by default
+            reader = csv.reader(f)
             header = next(reader, None)
             
             if not header:
@@ -156,7 +152,7 @@ def get_kb_file_data(filename: str, limit: int = 50):
                 
             rows = []
             for i, row in enumerate(reader):
-                if i >= limit:
+                if limit > 0 and i >= limit:
                     break
                 rows.append(row)
                 

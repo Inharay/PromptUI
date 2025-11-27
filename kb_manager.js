@@ -196,8 +196,14 @@ async function previewFile(filename) {
         html += '<tbody>';
         data.rows.forEach((row, i) => {
             html += `<tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50">`;
-            row.forEach(cell => {
-                html += `<td class="px-4 py-2 border border-gray-200 whitespace-nowrap max-w-xs truncate" title="${cell}">${cell}</td>`;
+            row.forEach((cell, index) => {
+                const colName = data.columns[index];
+                const formattedContent = formatCell(cell, colName);
+                
+                // Show all content fully without truncation
+                const tdClass = "px-4 py-2 border border-gray-200 min-w-[150px]";
+
+                html += `<td class="${tdClass}" title="${cell}">${formattedContent}</td>`;
             });
             html += '</tr>';
         });
@@ -209,6 +215,48 @@ async function previewFile(filename) {
         console.error('Preview error:', error);
         content.innerHTML = `<div class="text-center text-red-500 py-10">加载失败: ${error.message}</div>`;
     }
+}
+
+function formatCell(cell, colName) {
+    if (!cell) return '';
+
+    // Handle "同义词" and "标签" columns specifically
+    if (colName === '同义词' || colName === '标签') {
+        if (typeof cell === 'string' && cell.includes(',')) {
+            const items = cell.split(',').map(item => item.trim()).filter(item => item);
+            
+            return `<div class="flex flex-wrap gap-1">
+                ${items.map(item => {
+                    let content = item;
+                    let styleClass = "bg-gray-100 text-gray-700 border-gray-200"; // Default style
+                    
+                    // If it looks like [TAG:Value], extract content and use blue style
+                    if (item.startsWith('[') && item.endsWith(']')) {
+                        content = item.slice(1, -1);
+                        styleClass = "bg-blue-100 text-blue-700 border-blue-200";
+                    }
+                    
+                    return `<span class="px-2 py-0.5 rounded text-xs border ${styleClass}">${content}</span>`;
+                }).join('')}
+            </div>`;
+        }
+    }
+
+    // Fallback for other columns or if no comma found (but still check for tag format just in case)
+    if (typeof cell === 'string' && cell.trim().startsWith('[') && cell.trim().endsWith(']')) {
+        const items = cell.split(',').map(item => item.trim());
+        const isTagList = items.every(item => item.startsWith('[') && item.endsWith(']'));
+        
+        if (isTagList) {
+            return `<div class="flex flex-wrap gap-1">
+                ${items.map(item => {
+                    const content = item.slice(1, -1);
+                    return `<span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs border border-blue-200">${content}</span>`;
+                }).join('')}
+            </div>`;
+        }
+    }
+    return cell;
 }
 
 function closePreview() {
